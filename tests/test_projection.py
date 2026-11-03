@@ -140,3 +140,35 @@ def test_svec_and_smat_are_inverse_and_isometric():
 def test_project_rejects_an_unknown_cone():
     with pytest.raises(ValueError, match="unbekannter Kegel"):
         P.project("x", None, np.zeros((1, 3)))
+
+
+def _pow_cross_reference(tau, a):
+    """Die Formel ohne Skalierung der Exponenten (nur für Bereiche, in denen sie nicht überläuft): u × n, durch die größte Komponente geteilt."""
+    rho = np.exp(tau)
+    c = np.stack([1.0 + (1 - a) * rho ** (2 * a), -(a * rho ** (2 * a - 1) + rho), -(1 - a) * rho ** (a + 1) + a * rho ** (a - 1)], axis=-1)
+    return c / np.max(np.abs(c), axis=-1, keepdims=True)
+
+
+def test_the_power_cone_root_table_runs_without_warnings_and_equals_the_plain_formula(monkeypatch):
+    """Die Tabelle von u × n über τ ∈ [−250, 250] warf bei großen Exponenten RuntimeWarnings (ρ^(a+1) = e^(250 (a + 1)) läuft für a ab etwa 1,4 über, dann ∞/∞). Jetzt: kein Warnhinweis für jedes a (auch
+    außerhalb von (0, 1)), alle Werte endlich, und wo die einfache Formel nicht überläuft (a ≤ 1) stimmt sie bis auf Rundung."""
+    import warnings
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        for a in (0.001, 0.01, 0.1, 0.3, 0.5, 0.75, 0.9, 0.99, 1.0, 1.5, 2.0, 3.0):
+            c = P._pow_cross(P.TAU, a)
+            assert np.isfinite(c).all() and np.allclose(np.max(np.abs(c), axis=-1), 1.0), a
+            if a <= 1.0:
+                assert np.abs(c - _pow_cross_reference(P.TAU, a)).max() < 1e-12, a
+        rng = np.random.default_rng(3)
+        for a in (0.05, 0.3, 0.7, 0.95):
+            V = np.concatenate([rng.normal(size=(300, 3)), 1e3 * rng.normal(size=(300, 3)), 1e-3 * rng.normal(size=(300, 3))])
+            P._CACHE.pop(("pow", a), None)
+            new = P.proj_pow(V, a)
+            P._CACHE.pop(("pow", a), None)
+            with monkeypatch.context() as m:                    # dieselbe Projektion mit der einfachen Formel: gleiches Ergebnis (die Ergebnisse der Demo bleiben)
+                m.setattr(P, "_pow_cross", _pow_cross_reference)
+                old = P.proj_pow(V, a)
+            P._CACHE.pop(("pow", a), None)
+            assert np.isfinite(new).all() and np.abs(new - old).max() < 1e-9 * max(1.0, np.abs(V).max()), a

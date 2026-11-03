@@ -235,9 +235,14 @@ TAU = np.linspace(-250.0, 250.0, 1001)
 
 
 def _pow_cross(tau: np.ndarray, a: float) -> np.ndarray:
-    """u × n für u = (ρ, 1, ρ^a), n = −∇(u^a v^(1−a) − w) = (−a ρ^(a−1), −(1−a) ρ^a, 1) (w >= 0), ρ = e^τ; auf Länge ~1 skaliert (nur das Vorzeichen der Wurzel zählt)."""
-    rho = np.exp(tau)
-    c = np.stack([1.0 + (1 - a) * rho ** (2 * a), -(a * rho ** (2 * a - 1) + rho), -(1 - a) * rho ** (a + 1) + a * rho ** (a - 1)], axis=-1)
+    """u × n für u = (ρ, 1, ρ^a), n = −∇(u^a v^(1−a) − w) = (−a ρ^(a−1), −(1−a) ρ^a, 1) (w >= 0), ρ = e^τ; auf Länge ~1 skaliert (nur das Vorzeichen der Wurzel zählt).
+    Die Komponenten sind Summen der Potenzen ρ^0, ρ^(2a), ρ^(2a−1), ρ, ρ^(a+1), ρ^(a−1) mit den Koeffizienten 1, 1 − a, a, 1, 1 − a, a. Weil durch die größte Komponente geteilt wird, kürzt sich die größte
+    Potenz heraus: alle Potenzen werden als e^(Exponent − größter Exponent) gerechnet (nie über 1), sonst läuft ρ^(a+1) = e^(250 (a + 1)) für a ab etwa 1,4 über (kein Kegel mehr, aber ein RuntimeWarning und ∞/∞)."""
+    tau = np.asarray(tau, dtype=float)
+    expo = [np.zeros_like(tau), 2 * a * tau, (2 * a - 1) * tau, tau, (a + 1) * tau, (a - 1) * tau]
+    top = np.maximum.reduce(expo)
+    f = [np.exp(e - top) for e in expo]
+    c = np.stack([f[0] + (1 - a) * f[1], -(a * f[2] + f[3]), -(1 - a) * f[4] + a * f[5]], axis=-1)
     return c / np.max(np.abs(c), axis=-1, keepdims=True)
 
 

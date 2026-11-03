@@ -142,3 +142,17 @@ def test_hand_helpers_of_the_evaluation_match_the_tests():
     rows = ev.hand_rows()
     assert [r["step"] for r in rows][:4] == [1, 2, 3, 4] and rows[0]["x"] == pytest.approx(1.5) and rows[1]["x"] == pytest.approx(4.0) and rows[2]["x"] == pytest.approx(5.75) and rows[3]["x"] == pytest.approx(6.25)
     assert rows[-1]["x"] == pytest.approx(5.0, abs=1e-9) and rows[-1]["step"] == 80
+
+
+def test_an_orthant_of_size_m_is_projected_on_every_row():
+    """min x mit x ≥ 1 und x ≥ 2 (A = (−1; −1), b = (−1; −2), ein Orthant der Größe 2): der Wert ist 2 (von Hand). Die Zerlegung `spec_of` muss alle 2 Zeilen projizieren (vorher: ("l", 2, 1), eine Zeile,
+    Wert 1); ein Orthant der Größe 2 neben einem Lorentz-Kegel behält Reihenfolge und Anzahl."""
+    p = K.ConeProblem(np.array([1.0]), np.array([[-1.0], [-1.0]]), np.array([-1.0, -2.0]), (("l", 2),), np.array([3.0]))
+    assert AD.spec_of(p) == [("l", None, 2)]
+    assert AD.project_spec(AD.spec_of(p), np.array([-1.0, 2.0])).tolist() == [0.0, 2.0]
+    r = AD.admm(p, rho=1.0, tol=1e-8, max_iter=2000)
+    assert r.converged and r.value == pytest.approx(2.0, abs=1e-6)
+    mixed = K.ConeProblem(np.array([1.0]), np.array([[-1.0], [-1.0], [0.0], [0.0]]), np.array([-1.0, -1.0, 3.0, 4.0]), (("l", 2), ("q", 2)), np.array([3.0]))
+    assert [k for k, _, _ in AD.spec_of(mixed)] == ["l", "q"]
+    two = K.ConeProblem(np.array([1.0]), np.array([[-1.0], [-1.0]]), np.array([-1.0, -2.0]), (("l", 1), ("l", 1)), np.array([3.0]))
+    assert AD.admm(two, rho=1.0, tol=1e-8, max_iter=2000).value == pytest.approx(2.0, abs=1e-6)             # zwei Orthanten der Größe 1: derselbe Wert

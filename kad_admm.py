@@ -25,7 +25,9 @@ def spec_of(prob) -> list:
         return list(prob.groups)
     spec = []
     for kind, m in prob.cones:
-        if spec and spec[-1][0] == kind and spec[-1][1] == m:
+        if kind == "l":                                      # Orthant: m Zeilen, Parameter unbenutzt (project_spec liest die Anzahl als dritte Stelle)
+            spec.append(("l", None, m))
+        elif spec and spec[-1][0] == kind and spec[-1][1] == m:
             spec[-1] = (kind, m, spec[-1][2] + 1)
         else:
             spec.append((kind, m, 1))
