@@ -76,11 +76,12 @@ def _tol(V: np.ndarray, tol: float) -> np.ndarray:
 
 
 def exp_member(V: np.ndarray, tol: float = 0.0) -> np.ndarray:
-    """In K_exp = cl{y e^(x/y) <= z, y > 0}: y > 0 mit y log(z/y) >= x, oder die Fläche y = 0 mit x <= 0, z >= 0 (Toleranz tol · max(1, ‖v‖))."""
+    """In K_exp = cl{y e^(x/y) <= z, y > 0}: y > 0 mit y log(z/y) >= x, oder die Fläche y = 0 mit x <= 0, z >= 0 (Toleranz tol · max(1, ‖v‖)). Ist z = 0 mit y > 0, wird z als 10⁻³⁰⁰ gerechnet:
+    liegt y e^(x/y) unter der kleinsten Gleitkommazahl (x/y unter etwa −690), ist die Zahl z = 0 in Gleitkomma nicht vom Kegelpunkt zu unterscheiden."""
     t = _tol(V, tol)
     x, y, z = V[:, 0], V[:, 1], V[:, 2]
     with np.errstate(all="ignore"):
-        inside = (y > 0) & (z > 0) & (y * (np.log(np.maximum(z, 1e-300)) - np.log(np.maximum(y, 1e-300))) >= x - t)
+        inside = (y > 0) & (z >= 0) & (y * (np.log(np.maximum(z, 1e-300)) - np.log(np.maximum(y, 1e-300))) >= x - t)
     face = (np.abs(y) <= t) & (x <= t) & (z >= -t)
     return inside | face
 
@@ -225,6 +226,14 @@ def proj_exp(V: np.ndarray, iters: int = 12) -> np.ndarray:
         cand = np.maximum(y, 0.0)[:, None] * u
         dist = np.where(y > 0, np.linalg.norm(Vr - cand, axis=1), np.inf)
         _pick_best(row, dist, cand, best, bestd)
+    # Der Ast x/y < −700 liegt links vom Gitter: dort ist e^ρ unter 10⁻³⁰⁴ und e^(2ρ) = 0, die Gleichung ⟨v, u × n⟩ = 0 wird −x + ρ y = 0 (bis auf Terme unter 10⁻²⁹⁰ ·
+    # ‖v‖), die Wurzel also ρ = x/y, und der Randpunkt ist exakt (x, y, y e^(x/y)). Ohne diesen Kandidaten wählte die Fläche y = 0 (Abstandsfehler bis 4·10⁻⁶).
+    tail = np.flatnonzero((W[:, 1] > 0) & (W[:, 0] < _RHO[0] * W[:, 1]))
+    if len(tail):
+        Wt = W[tail]
+        with np.errstate(over="ignore", under="ignore"):
+            cand = np.stack([Wt[:, 0], Wt[:, 1], Wt[:, 1] * np.exp(Wt[:, 0] / Wt[:, 1])], axis=1)
+        _pick_best(tail, np.linalg.norm(Wt - cand, axis=1), cand, best, bestd)
     out[rest] = best
     return out
 
