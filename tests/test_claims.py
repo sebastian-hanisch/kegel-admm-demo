@@ -139,7 +139,7 @@ def test_warm_start_continues_but_does_not_save(relax):
 
 def test_admm_against_the_barrier(versus):
     """README (Experiment 5, Ziele Wertfehler 10⁻³/10⁻⁶/10⁻⁹): Barriere Lorentz 18/23/28, PSD 17/22/26, ℓ₃ 21/29/34, Exponential 29/36/43 Newton-Schritte; ADMM Lorentz 52/165/252, PSD 77/206/324,
-    ℓ₃ 60/191/344, Exponential 140/313/460 Schritte (ρ = 0,03 bzw. 0,01); beide Verfahren treffen das Ziel."""
+    ℓ₃ 60/191/344, Exponential 140/313/460 Schritte (ρ = 0,03 bei allen vier Kegeln); beide Verfahren treffen das Ziel."""
     bar = {"q": (18, 23, 28), "s": (17, 22, 26), "p": (21, 29, 34), "e": (29, 36, 43)}
     adm = {"q": (52, 165, 252), "s": (77, 206, 324), "p": (60, 191, 344), "e": (140, 313, 460)}
     for kind, row in versus.items():

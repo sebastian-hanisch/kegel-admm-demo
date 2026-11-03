@@ -298,7 +298,7 @@ def verdict_scan(rows: list, rho: float, cap: int = C.SCAN_CAP) -> tuple:
         failed += sum(1 for x in r["results"] if not x["converged"])
         total += len(r["results"])
     return "info", (f"Das beste ρ der Reihe je Kegel: " + "; ".join(parts) + f". Von {total} Läufen sind {failed} nach {cap} Schritten nicht gelöst (rechts vom flachen Boden). "
-                    f"Die Schrittzahl wächst zu beiden Seiten des Bodens, und der Boden liegt bei jedem Kegel an anderer Stelle.")
+                    f"Die Schrittzahl wächst zu beiden Seiten des Bodens, soweit die Reihe dort Werte hat; wo der Boden liegt, steht oben je Kegel.")
 
 
 def verdict_scale(rows: list, settings: list, s: Settings, cap: int = C.SCALE_CAP) -> tuple:
@@ -314,7 +314,7 @@ def verdict_scale(rows: list, settings: list, s: Settings, cap: int = C.SCALE_CA
         its = [x["iterations"] for x in cells]
         spread.append(f"Skala {rho_text(f)}: {min(its)} bis {'≥ ' if not all(x['converged'] for x in cells) else ''}{max(its)}")
     return "info", (f"Skala der Wolke {scales}, Start ρ = {rho_text(s.rho)}: " + "; ".join(parts) + f" (Deckel {cap} Schritte). "
-                    f"Der Ausgleich holt das meiste zurück, aber nicht gleichmäßig: Schritte der neun Einstellungen (Intervall × Schwelle) auf dem Lorentz-Programm bei Start ρ = {rho_text(s.rho)}, " + "; ".join(spread) + ".")
+                    f"Der Ausgleich holt Läufe zurück, die mit festem ρ nicht gelöst werden, aber nicht gleichmäßig: Schritte der neun Einstellungen (Intervall × Schwelle) auf dem Lorentz-Programm bei Start ρ = {rho_text(s.rho)}, " + "; ".join(spread) + ".")
 
 
 def verdict_relax(relax: list, warm: list) -> tuple:
@@ -344,5 +344,5 @@ def verdict_versus(rows: list) -> tuple:
     step = lambda key, digits: ", ".join(f"{_short(r['name'])} {de(r[key], digits)}" for r in rows)
     return "info", (f"Bei Wertfehler 10⁻⁶ (Zeiten nach Warmlauf): " + "; ".join(lines) + f". Ein ADMM-Schritt kostet in ms: {step('step_ms_admm', 2)}; ein Newton-Schritt der Barriere: {step('step_ms_barrier', 2)}. "
                     f"Für Lorentz- und PSD-Kegel ist der ADMM-Schritt billiger, aber es sind mehr Schritte: ADMM braucht {de(min(ratios), 1)}- bis {de(max(ratios), 1)}-mal die Zeit der Barriere, bei Wertfehler 10⁻³ {de(min(coarse), 1)}- bis {de(max(coarse), 1)}-mal. "
-                    f"Beim Potenz- und Exponentialkegel ist schon der einzelne ADMM-Schritt teurer, weil ein Aufruf der Projektion (Wurzelsuche in numpy) bei diesen wenigen Kegeln etwa eine Millisekunde braucht. "
-                    f"Auf Programmen mit 3 bis 35 Variablen gewinnt die Barriere; wo ADMM gewinnt, wird hier nicht gemessen.")
+                    f"Beim Potenz- und Exponentialkegel ist schon der einzelne ADMM-Schritt teurer, weil ein Aufruf der Projektion (Wurzelsuche in numpy) bei diesen wenigen Kegeln ein bis zwei Millisekunden braucht. "
+                    f"Auf Programmen mit 3 bis 35 Variablen liegt die Barriere bei hoher Genauigkeit vorn; bei grobem Ziel (10⁻³) liegen beide bei Lorentz und PSD nahe beieinander (Verhältnis oben); über große Programme sagt dieser Versuch nichts.")

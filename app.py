@@ -91,8 +91,8 @@ st.markdown(
     """
 **ADMM tauscht den Newton-Schritt gegen zwei billige Dinge: eine feste lineare Lösung und die Projektion auf den Kegel aus Stück 8.** Für `min cᵀx, s = b − A x ∈ K` rechnet ein Schritt `x` aus einer einmal
 invertierten Matrix, projiziert `s` auf `K` und schreibt den Rest in die Dualvariable `u` fort. Auf der Kugel der Standardwolke kommt das bei gutem Parameter ρ in einigen hundert Schritten auf `10⁻⁶`,
-wo die Barriere 30 bis 45 Newton-Schritte braucht. **Der Befund dieser Demo ist ρ:** dieselbe Aufgabe braucht je nach ρ 185 Schritte oder gar keine Lösung, das beste ρ wandert mit der Skala der Daten,
-und der Residuenausgleich holt das meiste zurück, aber nicht gleichmäßig.
+wo die Barriere bis zur Toleranz `10⁻⁹` 30 bis 43 Newton-Schritte braucht. **Der Befund dieser Demo ist ρ:** dieselbe Aufgabe braucht je nach ρ 185 Schritte oder gar keine Lösung, das beste ρ wandert mit der Skala der Daten,
+und der Residuenausgleich holt die nicht gelösten Läufe zurück, aber nicht gleichmäßig.
 Stück 9 der Reihe „Konvexe und konische Optimierung“; zweites Stück des Strangs Erste Ordnung.
 
 Weiter unten: **fünf Experimente** (**🔬**), **🚧 Wo die Annahmen enden** und der Expander **📐 Mathematische Formulierung**.
@@ -181,7 +181,7 @@ verdict(verdict_four(settings, four))
 st.markdown("---")
 
 st.subheader("🔬 Experiment 2: Wer wählt ρ?")
-st.caption(f"Schritte bis zur Toleranz 10⁻⁶ für zehn Werte von ρ auf allen vier Kegeln; Deckel {C.SCAN_CAP} Schritte, ein Kreuz heißt nicht gelöst.")
+st.caption(f"Schritte bis zur Toleranz 10⁻⁶ für neun Werte von ρ auf allen vier Kegeln; Deckel {C.SCAN_CAP} Schritte, ein Kreuz heißt nicht gelöst.")
 scan = _scan(settings.n, settings.stretch, settings.angle, settings.seed)
 st.plotly_chart(build_scan(scan, settings.rho, C.SCAN_CAP), width="stretch", key="scan_chart")
 st.dataframe(pd.DataFrame([{"Kegel": r["name"], **{f"ρ = {rho_text(x['rho'])}": count_text(x).replace(" (nicht gelöst)", "") for x in r["results"]}} for r in scan]), hide_index=True, width="stretch")
@@ -232,14 +232,14 @@ st.markdown(
 | Annahme | Was passiert, wenn sie verletzt ist | Wer setzt an |
 |---|---|---|
 | **Ein festes ρ passt zu jeder Aufgabe** | Die Schrittzahl ist U-förmig in ρ (Experiment 2), und das beste ρ wandert mit der Skala der Daten (Experiment 3): ρ = 1 löst die Wolke mit Faktor 1 in einigen hundert Schritten und die mit Faktor 100 gar nicht. | Stück 10 |
-| **Der Residuenausgleich macht ρ unwichtig** | Er holt das meiste zurück, aber die neun Einstellungen aus Intervall und Schwelle streuen bei Skala 100 um mehr als das Dreifache (Experiment 3); keine Einstellung ist auf beiden Skalen die beste. | – |
+| **Der Residuenausgleich macht ρ unwichtig** | Er holt die nicht gelösten Läufe zurück, aber die neun Einstellungen aus Intervall und Schwelle streuen bei Skala 100 um mehr als das Dreifache (Experiment 3); keine Einstellung ist auf beiden Skalen die beste. | – |
 | **ADMM ist ein Verfahren für grobe Genauigkeit** | Auf diesen Programmen erreicht es ohne Mühe hohe Genauigkeit (Wertfehler unter 10⁻⁹ nach wenigen hundert Schritten); die Erwartung „grob“ stammt von großen Programmen, die hier nicht gerechnet werden. | Stück 10 |
-| **Ein ADMM-Schritt ist billiger als ein Newton-Schritt, also ist ADMM schneller** | Bei 3 bis 35 Variablen ist der Lorentz- und PSD-Schritt billiger, aber es sind fünf- bis achtmal so viele; der Potenz- und Exponentialkegel-Schritt ist schon einzeln teurer (Experiment 1 und 5). Der Vorteil „kein Newton-System“ braucht große Programme. | Stück 10 |
+| **Ein ADMM-Schritt ist billiger als ein Newton-Schritt, also ist ADMM schneller** | Bei 3 bis 35 Variablen ist der Lorentz- und PSD-Schritt billiger, aber es sind drei- bis zwölfmal so viele; der Potenz- und Exponentialkegel-Schritt ist schon einzeln teurer (Experiment 1 und 5). Der Vorteil „kein Newton-System“ braucht große Programme. | Stück 10 |
 | **Die Barriere ist hier immer schneller** | Nur für diese kleinen Programme und diese Implementierungen (numpy, dichte Matrizen); bei grobem Ziel (10⁻³) liegen ADMM und Barriere für Lorentz- und PSD-Kegel gleichauf. Über große Programme sagt Experiment 5 nichts. | Stück 10 |
-| **Ein Warmstart über `x` spart Schritte** | Der Zustand des Verfahrens ist `(s, u)`: ein Start im groben `x` allein spart fast nichts, mit `u` setzt der Lauf fort, wo der grobe aufgehört hat (Experiment 4). | – |
-| **Überrelaxation beschleunigt** | Auf diesen Programmen nicht: je größer α, desto mehr Schritte (Experiment 4). | – |
+| **Ein Warmstart über `x` spart Schritte** | Der Zustand des Verfahrens ist `(s, u)`: ein Start im groben `x` allein spart bei Lorentz, PSD und Potenzkegel nur 4 bis 6 %, beim Exponentialkegel allerdings 50 %, mit `u` setzt der Lauf fort, wo der grobe aufgehört hat (Experiment 4). | – |
+| **Überrelaxation beschleunigt** | Auf diesen Programmen nicht: α = 1 ist bestes oder gleich gut, je größer α, desto mehr Schritte (Experiment 4). | – |
 | **ADMM erkennt unzulässige Programme** | Diese Form nicht: ohne homogene selbstduale Einbettung (wie in SCS) gibt es kein Zertifikat für unzulässige oder unbeschränkte Programme, der Lauf endet am Schrittdeckel. | – |
-| **Die Zeiten gelten allgemein** | Sie hängen vom Rechner ab; die Projektionen des Exponential- und Potenzkegels haben im Mittel gut eine Millisekunde festen Aufwand je Aufruf (numpy), unabhängig von der Zahl der Kegel. Zeiten werden nicht getestet. | – |
+| **Die Zeiten gelten allgemein** | Sie hängen vom Rechner ab; die Projektionen des Exponential- und Potenzkegels haben je nach Rechner ein bis zwei Millisekunden festen Aufwand je Aufruf (numpy), bei 1 bis 32 Kegeln unabhängig von der Zahl der Kegel (bei Hunderten wächst er). Zeiten werden nur in ihrer Struktur getestet. | – |
 """
 )
 

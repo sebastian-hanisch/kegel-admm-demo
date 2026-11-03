@@ -123,7 +123,7 @@ def test_versus_verdict_gives_steps_times_and_ratios():
     assert kind == "info"
     for part in ("Lorentz-Kegel: Barriere 23 Newton-Schritte / 5,0 ms, ADMM 165 Schritte / 10 ms", "Exponentialkegel: Barriere 36 Newton-Schritte / 16 ms, ADMM 313 Schritte / 330 ms",
                  "Ein ADMM-Schritt kostet in ms: Lorentz-Kegel 0,06, Exponentialkegel 1,02; ein Newton-Schritt der Barriere: Lorentz-Kegel 0,20, Exponentialkegel 0,47",
-                 "ADMM braucht 0,8- bis 2,7-mal die Zeit der Barriere, bei Wertfehler 10⁻³ 0,8- bis 0,8-mal", "gewinnt die Barriere"):
+                 "ADMM braucht 0,8- bis 2,7-mal die Zeit der Barriere, bei Wertfehler 10⁻³ 0,8- bis 0,8-mal", "liegt die Barriere bei hoher Genauigkeit vorn"):
         assert part in text, part
 
 
